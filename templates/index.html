@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DrowsGuard Web Viewer</title>
+    <style>
+        body {
+            background-color: #0d1117;
+            color: #c9d1d9;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+        }
+        h1 {
+            color: #58a6ff;
+            margin-bottom: 20px;
+        }
+        .container {
+            background: #161b22;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            border: 1px solid #30363d;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        img {
+            border-radius: 8px;
+            max-width: 100%;
+            height: auto;
+            border: 2px solid #30363d;
+        }
+        .status-bar {
+            margin-top: 15px;
+            font-size: 1.2rem;
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+        .badge {
+            padding: 5px 10px;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+        .awake { background: #238636; color: #fff; }
+        .drowsy { background: #da3633; color: #fff; animation: pulse 1s infinite alternate; }
+        
+        @keyframes pulse {
+            0% { opacity: 0.7; transform: scale(1); }
+            100% { opacity: 1; transform: scale(1.05); }
+        }
+        .hint {
+            margin-top: 10px;
+            font-size: 0.85rem;
+            color: #8b949e;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚗 DrowsGuard Web View</h1>
+        <!-- Image stream from Flask -->
+        <img src="{{ url_for('video_feed') }}" alt="Webcam Feed">
+        
+        <div class="status-bar">
+            <span>Current EAR: <span id="ear-val">0.00</span></span>
+            <span id="status-badge" class="badge awake">AWAKE</span>
+        </div>
+    </div>
+    
+    <div class="hint">Click anywhere on the screen to enable browser audio alarms.</div>
+
+    <!-- Web Audio API for generating a Beep -->
+    <script>
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        const audioCtx = new AudioContext();
+        let beepInterval = null;
+
+        function playBeep() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            
+            const oscillator = audioCtx.createOscillator();
+            const gainNode = audioCtx.createGain();
+            
+            oscillator.type = 'sine';
+            oscillator.frequency.value = 1000; // 1kHz freq like the original beep
+            
+            gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+            
+            oscillator.connect(gainNode);
+            gainNode.connect(audioCtx.destination);
+            
+            oscillator.start();
+            oscillator.stop(audioCtx.currentTime + 0.5);
+        }
+
+        async function updateStatus() {
+            try {
+                const response = await fetch('/status');
+                const data = await response.json();
+                
+                document.getElementById('ear-val').innerText = data.ear.toFixed(2);
+                
+                const badge = document.getElementById('status-badge');
+                if (data.is_drowsy) {
+                    if (badge.className !== 'badge drowsy') {
+                        badge.className = 'badge drowsy';
+                        badge.innerText = '⚠️ DROWSY! WAKE UP!';
+                        
+                        // Start looping the beep every 600ms
+                        if (!beepInterval) {
+                            playBeep(); 
+                            beepInterval = setInterval(playBeep, 600);
+                        }
+                    }
+                } else {
+                    if (badge.className !== 'badge awake') {
+                        badge.className = 'badge awake';
+                        badge.innerText = 'AWAKE';
+                        
+                        // Stop looping beep
+                        if (beepInterval) {
+                            clearInterval(beepInterval);
+                            beepInterval = null;
+                        }
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to fetch status:", err);
+            }
+        }
+
+        // Poll the server backend every 500ms
+        setInterval(updateStatus, 500);
+
+        // Required to bypass Chrome/Edge autoplay policy restrictions
+        document.body.addEventListener('click', () => {
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        });
+    </script>
+</body>
+</html>

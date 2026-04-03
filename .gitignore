@@ -1,0 +1,27 @@
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+.env
+venv/
+env/
+
+# Debug/test files
+test.py
+test_face.py
+face.jpg
+error.html
+traceback_out.txt
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Large model file (users download separately)
+face_landmarker.task
