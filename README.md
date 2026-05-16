@@ -3,11 +3,12 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Python-3.10+-3776AB?style=for-the-badge&logo=python&logoColor=white" />
   <img src="https://img.shields.io/badge/Flask-Web_App-000000?style=for-the-badge&logo=flask&logoColor=white" />
-  <img src="https://img.shields.io/badge/MediaPipe-Face_Landmarker-4285F4?style=for-the-badge&logo=google&logoColor=white" />
-  <img src="https://img.shields.io/badge/OpenCV-Computer_Vision-5C3EE8?style=for-the-badge&logo=opencv&logoColor=white" />
+  <img src="https://img.shields.io/badge/MediaPipe-FaceMesh_JS-4285F4?style=for-the-badge&logo=google&logoColor=white" />
+  <img src="https://img.shields.io/badge/Supabase-Database_%26_Auth-3ECF8E?style=for-the-badge&logo=supabase&logoColor=white" />
+  <img src="https://img.shields.io/badge/Chart.js-Data_Viz-FF6384?style=for-the-badge&logo=chartdotjs&logoColor=white" />
 </p>
 
-**DrowsGuard** is an AI-powered real-time drowsiness detection system that runs as a web application in your browser. It uses your webcam to continuously monitor facial landmarks, computes the **Eye Aspect Ratio (EAR)**, and triggers loud audio-visual alerts when signs of fatigue are detected — helping prevent accidents caused by drowsy driving, late-night studying, or shift work.
+**DrowsGuard** is a full-stack AI-powered drowsiness detection web application. It uses your webcam to continuously monitor facial landmarks in real time, computes the **Eye Aspect Ratio (EAR)** entirely in the browser, and triggers audio-visual alerts the moment drowsiness is detected — with full user authentication, session management, and historical trend tracking powered by Supabase.
 
 ---
 
@@ -15,24 +16,31 @@
 
 | Feature | Description |
 |---|---|
-| 🎯 **Real-Time Face Tracking** | Detects and tracks 468 facial landmarks using Google's MediaPipe Face Landmarker |
-| 👁️ **Eye Aspect Ratio (EAR)** | Calculates EAR from 6 eye landmarks per eye to measure eye openness |
-| ⏱️ **Timed Drowsiness Detection** | Triggers alert only after eyes stay closed for **2+ continuous seconds** (reduces false positives) |
-| 🔊 **Browser Audio Alarm** | Loud 800Hz alarm generated via the Web Audio API — plays directly in your browser |
-| 🔴 **Visual Alert Overlay** | Flashing red border + pulsing "DROWSY! WAKE UP!" warning overlay on the video feed |
-| 📊 **Live HUD Dashboard** | Shows EAR value, EAR bar graph, session uptime, current time, and AWAKE/DROWSY status |
-| 🌐 **Web-Based Interface** | Runs as a Flask web app — access from any browser on `localhost:5000` |
-| 🟢 **Eye Contour Visualization** | Green/red convex hull drawn around detected eyes with cyan landmark dots |
+| 👁️ **Real-Time Detection** | MediaPipe FaceMesh tracks 468 facial landmarks every frame — entirely browser-side |
+| 📐 **EAR Algorithm** | Eye Aspect Ratio calculated in JavaScript for zero-latency drowsiness detection |
+| ⏱️ **Timed Sessions** | Set a duration (30min, 1hr, 2hr, 4hr, or custom) — app auto-stops with a countdown |
+| ♾️ **Continuous Mode** | Run indefinitely until manually stopped |
+| 🏷️ **Session Labels** | Tag sessions (Study, Work, Night Drive, Reading, Gaming, or custom) |
+| 🔔 **Audio Alerts** | Web Audio API beep triggers the moment drowsiness is detected |
+| 🔴 **Visual Alerts** | Pulsing red border around the entire screen when drowsy |
+| 📊 **Live EAR Graph** | Scrolling real-time Chart.js graph of eye openness during session |
+| 🎛️ **Live Sensitivity Control** | Adjust EAR threshold and alert delay mid-session |
+| 📋 **Session Summary** | Full report on session end — duration, alerts, longest episode, avg EAR, alert timeline |
+| 📈 **History & Trends** | Per-user session history with trend charts across all sessions |
+| ⬇️ **CSV Export** | Download your full session history as a CSV file |
+| 🔐 **User Authentication** | Register and login securely via Supabase Auth |
+| ☁️ **Cloud Storage** | All session data persisted to Supabase (Postgres) per user |
 
 ---
 
 ## 🧠 How It Works
 
 ```
-Webcam Frame → MediaPipe Face Landmarker → Extract Eye Landmarks
-    → Calculate EAR (Eye Aspect Ratio) → Compare Against Threshold (0.25)
-        → If EAR < 0.25 for > 2 seconds → TRIGGER ALARM 🚨
-        → If EAR ≥ 0.25 → Status: AWAKE ✅
+Webcam → MediaPipe FaceMesh (browser) → Extract Eye Landmarks
+    → Calculate EAR (Eye Aspect Ratio) → Compare Against Threshold (default: 0.25)
+        → If EAR < threshold for > 2 seconds → TRIGGER ALERT 🚨
+        → If EAR ≥ threshold → Status: AWAKE ✅
+            → Session ends → Save to Supabase → Show Summary
 ```
 
 ### Eye Aspect Ratio (EAR) Formula
@@ -44,22 +52,28 @@ EAR =  ────────────────────────
 ```
 
 - **P1–P6** are the six landmark points around each eye
-- EAR ≈ **0.3** when eyes are fully open
+- EAR ≈ **0.30** when eyes are fully open
 - EAR ≈ **0.05** when eyes are closed
-- Threshold: **0.25** (configurable in `app.py`)
+- Default threshold: **0.25** (adjustable live via slider)
+
+> Algorithm based on: *"Real-Time Eye Blink Detection using Facial Landmarks"* — Soukupová & Čech (2016)
 
 ---
 
 ## 📁 Project Structure
 
 ```
-Drowsiness Detector/
-├── app.py                    # Flask backend — video streaming, face detection, EAR logic
-├── face_landmarker.task      # MediaPipe Face Landmarker AI model (auto-downloaded)
+Drowsiness-Detector/
+├── app.py                  # Flask backend — serves HTML, exposes /api/config
 ├── templates/
-│   └── index.html            # Frontend — dark-themed UI with live video + audio alerts
-├── requirements.txt          # Python dependencies
-└── README.md                 # You are here
+│   └── index.html          # Full single-page app (7 views, all pages)
+├── static/
+│   ├── app.js              # All detection logic, Supabase integration, session management
+│   └── style.css           # Complete design system (dark navy dashboard aesthetic)
+├── supabase_schema.sql     # SQL to set up the sessions table in Supabase
+├── requirements.txt        # Python dependencies
+├── .env.example            # Template for environment variables
+└── README.md               # You are here
 ```
 
 ---
@@ -67,85 +81,101 @@ Drowsiness Detector/
 ## 🚀 Getting Started
 
 ### Prerequisites
-
-- **Python 3.10+** installed and added to PATH
+- **Python 3.10+**
 - A working **webcam**
-- A modern web browser (Chrome, Edge, Firefox)
+- A modern browser (Chrome recommended)
+- A free [Supabase](https://supabase.com) account
 
-### 1. Clone or Download
-
+### 1. Clone the repo
 ```bash
 git clone https://github.com/Aditya000012/Drowsiness-Detector.git
 cd Drowsiness-Detector
 ```
 
-### 2. Install Dependencies
-
+### 2. Install dependencies
 ```bash
-pip install -r requirements.txt
+pip install flask python-dotenv
 ```
 
-### 3. Download the AI Model
+### 3. Set up Supabase
+- Create a free project at [supabase.com](https://supabase.com)
+- Go to **SQL Editor** and run the contents of `supabase_schema.sql`
+- Go to **Settings → API** and copy your Project URL and anon key
 
-The app requires the MediaPipe Face Landmarker model file. Download it with:
-
-```bash
-python -c "import urllib.request; urllib.request.urlretrieve('https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/1/face_landmarker.task', 'face_landmarker.task')"
+### 4. Create `.env` file
+```
+SUPABASE_URL=your-project-url
+SUPABASE_ANON_KEY=your-anon-key
 ```
 
-### 4. Run the Application
-
+### 5. Run the app
 ```bash
 python app.py
 ```
 
-### 5. Open in Browser
-
-Navigate to **[http://localhost:5000](http://localhost:5000)** and **click anywhere on the page** to enable browser audio alarms.
-
-> ⚠️ **Important:** You must click on the page at least once after loading — browsers block auto-playing audio until the user interacts with the page.
+Open **[http://localhost:5000](http://localhost:5000)**, register an account, and start your first session.
 
 ---
 
 ## ⚙️ Configuration
 
-You can tweak the detection sensitivity by editing these constants in `app.py`:
+Adjust detection behaviour live during a session using the in-app sliders, or set defaults before starting:
 
 | Parameter | Default | Description |
 |---|---|---|
-| `EAR_THRESHOLD` | `0.25` | EAR value below which eyes are considered "closed" |
-| `DROWSY_TIME_THRESHOLD` | `2.0` | Seconds of continuous eye closure before alarm triggers |
+| EAR Threshold | `0.25` | EAR below which eyes are considered closed |
+| Alert Delay | `2s` | Seconds of continuous eye closure before alert triggers |
+| Session Mode | `Timed` | Timed (auto-stop) or Continuous (manual stop) |
 
 ---
 
 ## 🛠️ Tech Stack
 
-| Technology | Purpose |
+| Layer | Technology |
 |---|---|
-| **Python 3** | Core programming language |
-| **Flask** | Lightweight web server for streaming and API |
-| **OpenCV** | Video capture, image processing, and HUD rendering |
-| **MediaPipe** | Google's Face Landmarker for real-time facial landmark detection |
-| **NumPy / SciPy** | Numerical computation for EAR calculation |
-| **Web Audio API** | Browser-native alarm sound generation (no server-side audio needed) |
-| **HTML5 / CSS3 / JS** | Responsive dark-themed frontend UI |
+| Frontend | HTML5, CSS3, Vanilla JavaScript |
+| Detection | MediaPipe FaceMesh (browser-side, no server processing) |
+| Charts | Chart.js |
+| Audio Alerts | Web Audio API |
+| Backend | Python Flask |
+| Database | Supabase (Postgres) |
+| Authentication | Supabase Auth |
+| Deployment | Render |
 
 ---
 
-## 🖥️ Architecture
+## 🏗️ Architecture
 
 ```
-┌─────────────┐        MJPEG Stream         ┌─────────────────┐
-│   Webcam    │ ──→  /video_feed  ─────────→ │   Browser UI    │
-└─────────────┘                              │                 │
-       │                                     │  - Video Feed   │
-       ▼                                     │  - EAR Display  │
-┌─────────────┐        JSON API              │  - Status Badge │
-│  MediaPipe  │ ──→  /status  ────────────→  │  - Audio Alarm  │
-│  + OpenCV   │                              │  (Web Audio API)│
-│  (Python)   │                              └─────────────────┘
-└─────────────┘
-    Flask Server (port 5000)                    Browser Client
+┌──────────────────────────────────────────────────────┐
+│                    Browser Client                     │
+│                                                      │
+│  ┌─────────────┐    ┌──────────────┐                 │
+│  │   Webcam    │───▶│  MediaPipe   │                 │
+│  │   (video)   │    │  FaceMesh JS │                 │
+│  └─────────────┘    └──────┬───────┘                 │
+│                            │ Landmarks               │
+│                     ┌──────▼───────┐                 │
+│                     │ EAR Engine   │                 │
+│                     │ (app.js)     │                 │
+│                     └──────┬───────┘                 │
+│              ┌─────────────┼──────────────┐          │
+│              ▼             ▼              ▼          │
+│        Audio Alert    Visual HUD     Supabase JS     │
+│        (Web Audio)   (Chart.js)    (Session Save)    │
+└──────────────────────────────────────────────────────┘
+                              │
+                    ┌─────────▼──────────┐
+                    │   Flask Backend    │
+                    │  /api/config only  │
+                    │  (serves HTML)     │
+                    └─────────┬──────────┘
+                              │
+                    ┌─────────▼──────────┐
+                    │     Supabase       │
+                    │  Auth + Postgres   │
+                    │  (session history) │
+                    └────────────────────┘
 ```
 
 ---
@@ -154,12 +184,12 @@ You can tweak the detection sensitivity by editing these constants in `app.py`:
 
 | Issue | Solution |
 |---|---|
-| `python` not recognized | Install Python from [python.org](https://python.org) and check **"Add to PATH"** during installation |
-| `pip` not recognized | Use `python -m pip install -r requirements.txt` instead |
-| Broken video feed / no camera | Close other apps using the camera (Zoom, Teams, etc.) and restart the server |
-| No alarm sound | Click anywhere on the page first to enable browser audio |
-| Multiple stale processes | Run `taskkill /F /IM python.exe` (Windows) to kill zombie processes, then restart |
-| `ModuleNotFoundError: mediapipe` | Run `pip install mediapipe` — make sure you're using the same Python environment |
+| Buttons not working | Open browser console (F12) — check for JS errors |
+| Camera not showing | Allow camera permissions in browser; close other apps using webcam |
+| No audio alert | Click anywhere on the page first — browsers require user interaction before audio |
+| Supabase not connecting | Check `/api/config` at `localhost:5000/api/config` — both keys should be non-empty |
+| `python` not recognized | Install Python from [python.org](https://python.org) and check **"Add to PATH"** |
+| Sessions not saving | Ensure `supabase_schema.sql` was run and RLS policy is enabled |
 
 ---
 
@@ -171,12 +201,13 @@ This project is open-source and available under the [MIT License](LICENSE).
 
 ## 🙏 Acknowledgments
 
-- [Google MediaPipe](https://ai.google.dev/edge/mediapipe/solutions/vision/face_landmarker) — Face Landmarker model
-- [OpenCV](https://opencv.org/) — Computer vision library
-- Eye Aspect Ratio algorithm based on the paper: *"Real-Time Eye Blink Detection using Facial Landmarks"* by Soukupová & Čech (2016)
+- [Google MediaPipe](https://ai.google.dev/edge/mediapipe/solutions/vision/face_mesh) — FaceMesh model
+- [Supabase](https://supabase.com) — Auth and database
+- [Chart.js](https://chartjs.org) — Data visualization
+- Eye Aspect Ratio algorithm based on: *"Real-Time Eye Blink Detection using Facial Landmarks"* — Soukupová & Čech (2016)
 
 ---
 
 <p align="center">
-  Made with ❤️ by <strong>Aditya</strong>
+  Made with ❤️ by <strong>Aditya Kumar Singh</strong>
 </p>
