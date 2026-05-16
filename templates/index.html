@@ -1,151 +1,154 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DrowsGuard Web Viewer</title>
-    <style>
-        body {
-            background-color: #0d1117;
-            color: #c9d1d9;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
-            margin: 0;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100vh;
-        }
-        h1 {
-            color: #58a6ff;
-            margin-bottom: 20px;
-        }
-        .container {
-            background: #161b22;
-            padding: 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-            border: 1px solid #30363d;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-        }
-        img {
-            border-radius: 8px;
-            max-width: 100%;
-            height: auto;
-            border: 2px solid #30363d;
-        }
-        .status-bar {
-            margin-top: 15px;
-            font-size: 1.2rem;
-            display: flex;
-            gap: 20px;
-            align-items: center;
-        }
-        .badge {
-            padding: 5px 10px;
-            border-radius: 6px;
-            font-weight: bold;
-        }
-        .awake { background: #238636; color: #fff; }
-        .drowsy { background: #da3633; color: #fff; animation: pulse 1s infinite alternate; }
-        
-        @keyframes pulse {
-            0% { opacity: 0.7; transform: scale(1); }
-            100% { opacity: 1; transform: scale(1.05); }
-        }
-        .hint {
-            margin-top: 10px;
-            font-size: 0.85rem;
-            color: #8b949e;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DrowsGuard — Stay Alert. Stay Safe.</title>
+  <meta name="description" content="Real-time drowsiness detection dashboard with session tracking and history.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils@0.3.1640029074/camera_utils.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh@0.4.1633559619/face_mesh.js" crossorigin="anonymous"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
-    <div class="container">
-        <h1>🚗 DrowsGuard Web View</h1>
-        <!-- Image stream from Flask -->
-        <img src="{{ url_for('video_feed') }}" alt="Webcam Feed">
-        
-        <div class="status-bar">
-            <span>Current EAR: <span id="ear-val">0.00</span></span>
-            <span id="status-badge" class="badge awake">AWAKE</span>
-        </div>
+  <div id="drowsy-border"></div>
+
+  <!-- ========== PAGE: LANDING ========== -->
+  <div id="page-landing" class="page">
+    <nav class="landing-nav"><div class="nav-brand"><svg class="logo-svg" viewBox="0 0 32 32" fill="none"><path d="M16 2L4 8v8c0 7.73 5.12 14.95 12 16 6.88-1.05 12-8.27 12-16V8L16 2z" fill="#00d4ff" fill-opacity="0.15" stroke="#00d4ff" stroke-width="1.5"/><ellipse cx="16" cy="15" rx="7" ry="4" stroke="#00d4ff" stroke-width="1.5" fill="none"/><circle cx="16" cy="15" r="2" fill="#00d4ff"/></svg><span class="brand-text">DrowsGuard</span></div><div class="nav-actions"><button class="btn btn-ghost" onclick="showPage('auth','login')">Log In</button><button class="btn btn-primary" onclick="showPage('auth','register')">Get Started</button></div></nav>
+    <section class="hero"><h1>Stay Alert. Stay Safe.<br><span class="hero-accent">Every Session.</span></h1><p class="hero-sub">AI-powered drowsiness detection that watches over you in real time. Track your alertness, review your history, stay protected.</p><div class="hero-btns"><button class="btn btn-primary btn-lg" onclick="showPage('auth','register')">Start Free</button><button class="btn btn-ghost btn-lg" onclick="document.getElementById('features').scrollIntoView({behavior:'smooth'})">Learn More</button></div></section>
+    <section id="features" class="features-section"><h2 class="section-title">Why DrowsGuard?</h2><div class="feature-grid">
+      <div class="feature-card"><div class="feature-icon">👁️</div><h3>Real-Time Detection</h3><p>MediaPipe FaceMesh tracks your eyes every frame. Instant alerts when drowsiness is detected.</p></div>
+      <div class="feature-card"><div class="feature-icon">📊</div><h3>Session Tracking</h3><p>Every monitoring session is saved with detailed stats — EAR scores, alert counts, durations.</p></div>
+      <div class="feature-card"><div class="feature-icon">📈</div><h3>History & Trends</h3><p>Review past sessions, spot patterns, and track your alertness improvement over time.</p></div>
+    </div></section>
+    <section class="how-section"><h2 class="section-title">How It Works</h2><div class="steps-grid">
+      <div class="step-card"><div class="step-num">1</div><h3>Set Up</h3><p>Choose session mode, set duration, and adjust sensitivity to your preference.</p></div>
+      <div class="step-card"><div class="step-num">2</div><h3>Monitor</h3><p>Your webcam tracks eye landmarks in real-time. DrowsGuard watches so you don't have to.</p></div>
+      <div class="step-card"><div class="step-num">3</div><h3>Review</h3><p>Session ends with a full report. View history, trends, and improve your alertness habits.</p></div>
+    </div></section>
+  </div>
+
+  <!-- ========== PAGE: AUTH ========== -->
+  <div id="page-auth" class="page hidden">
+    <div class="auth-wrapper">
+      <div class="auth-card">
+        <div class="auth-brand"><svg class="logo-svg" viewBox="0 0 32 32" fill="none"><path d="M16 2L4 8v8c0 7.73 5.12 14.95 12 16 6.88-1.05 12-8.27 12-16V8L16 2z" fill="#00d4ff" fill-opacity="0.15" stroke="#00d4ff" stroke-width="1.5"/><ellipse cx="16" cy="15" rx="7" ry="4" stroke="#00d4ff" stroke-width="1.5" fill="none"/><circle cx="16" cy="15" r="2" fill="#00d4ff"/></svg><span class="brand-text">DrowsGuard</span></div>
+        <div class="auth-tabs"><button id="tab-login" class="auth-tab active" onclick="showAuthTab('login')">Log In</button><button id="tab-register" class="auth-tab" onclick="showAuthTab('register')">Register</button></div>
+        <div id="auth-error" class="auth-error hidden"></div>
+        <!-- Login Form -->
+        <form id="form-login" class="auth-form" onsubmit="handleLogin(event)">
+          <div class="input-group"><label>Email</label><input type="email" id="login-email" required placeholder="you@example.com"></div>
+          <div class="input-group"><label>Password</label><input type="password" id="login-password" required placeholder="••••••••"></div>
+          <button type="submit" class="btn btn-primary btn-block" id="login-btn">Log In</button>
+        </form>
+        <!-- Register Form -->
+        <form id="form-register" class="auth-form hidden" onsubmit="handleRegister(event)">
+          <div class="input-group"><label>Full Name</label><input type="text" id="reg-name" required placeholder="John Doe"></div>
+          <div class="input-group"><label>Email</label><input type="email" id="reg-email" required placeholder="you@example.com"></div>
+          <div class="input-group"><label>Password</label><input type="password" id="reg-password" required minlength="6" placeholder="Min 6 characters"></div>
+          <div class="input-group"><label>Confirm Password</label><input type="password" id="reg-confirm" required placeholder="••••••••"></div>
+          <button type="submit" class="btn btn-primary btn-block" id="reg-btn">Create Account</button>
+        </form>
+        <p class="auth-footer"><a href="#" onclick="showPage('landing')">← Back to home</a></p>
+      </div>
     </div>
-    
-    <div class="hint">Click anywhere on the screen to enable browser audio alarms.</div>
+  </div>
 
-    <!-- Web Audio API for generating a Beep -->
-    <script>
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        const audioCtx = new AudioContext();
-        let beepInterval = null;
+  <!-- ========== PAGE: APP (sidebar layout) ========== -->
+  <div id="page-app" class="page hidden">
+    <nav class="app-topbar"><div class="nav-brand"><svg class="logo-svg sm" viewBox="0 0 32 32" fill="none"><path d="M16 2L4 8v8c0 7.73 5.12 14.95 12 16 6.88-1.05 12-8.27 12-16V8L16 2z" fill="#00d4ff" fill-opacity="0.15" stroke="#00d4ff" stroke-width="1.5"/><ellipse cx="16" cy="15" rx="7" ry="4" stroke="#00d4ff" stroke-width="1.5" fill="none"/><circle cx="16" cy="15" r="2" fill="#00d4ff"/></svg><span class="brand-text">DrowsGuard</span></div><div class="topbar-right"><span id="user-name" class="user-name"></span><button class="btn btn-ghost btn-sm" onclick="handleLogout()">Logout</button></div></nav>
+    <div class="app-body">
+      <aside id="sidebar">
+        <button class="sidebar-btn active" data-view="dashboard" onclick="showView('dashboard')"><span>📊</span> Dashboard</button>
+        <button class="sidebar-btn" data-view="setup" onclick="showView('setup')"><span>▶️</span> New Session</button>
+        <button class="sidebar-btn" data-view="history" onclick="showView('history')"><span>📋</span> History</button>
+      </aside>
+      <main id="app-content">
+        <!-- === VIEW: DASHBOARD === -->
+        <div id="view-dashboard" class="view">
+          <div class="welcome-card"><h2>Welcome back, <span id="dash-name">User</span></h2><p>Here's your alertness overview.</p></div>
+          <div class="stats-row">
+            <div class="stat-card"><div class="stat-val" id="stat-sessions">0</div><div class="stat-label">Total Sessions</div></div>
+            <div class="stat-card"><div class="stat-val" id="stat-alerts">0</div><div class="stat-label">Total Alerts</div></div>
+            <div class="stat-card"><div class="stat-val" id="stat-avg-dur">0m</div><div class="stat-label">Avg Duration</div></div>
+            <div class="stat-card"><div class="stat-val" id="stat-best">-</div><div class="stat-label">Best Session</div></div>
+          </div>
+          <div class="dash-grid">
+            <div class="card"><div class="card-hdr">Recent Sessions</div><div id="recent-table-wrap" class="card-body"><p class="empty-msg">No sessions yet. Start your first one!</p></div></div>
+            <div class="card"><div class="card-hdr">Alert Trend (Last 10)</div><div class="card-body chart-wrap"><canvas id="dash-trend-chart"></canvas></div></div>
+          </div>
+          <button class="btn btn-primary btn-lg" onclick="showView('setup')" style="margin-top:20px;">▶ Start New Session</button>
+        </div>
 
-        function playBeep() {
-            if (audioCtx.state === 'suspended') audioCtx.resume();
-            
-            const oscillator = audioCtx.createOscillator();
-            const gainNode = audioCtx.createGain();
-            
-            oscillator.type = 'sine';
-            oscillator.frequency.value = 1000; // 1kHz freq like the original beep
-            
-            gainNode.gain.setValueAtTime(0.5, audioCtx.currentTime);
-            gainNode.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
-            
-            oscillator.connect(gainNode);
-            gainNode.connect(audioCtx.destination);
-            
-            oscillator.start();
-            oscillator.stop(audioCtx.currentTime + 0.5);
-        }
+        <!-- === VIEW: SESSION SETUP === -->
+        <div id="view-setup" class="view hidden">
+          <h2 class="view-title">New Session</h2>
+          <div class="setup-form">
+            <div class="input-group"><label>Session Label</label><input type="text" id="setup-label" placeholder="e.g. Study, Night Drive"><div class="tag-row"><button type="button" class="tag" onclick="setLabel('Study')">Study</button><button type="button" class="tag" onclick="setLabel('Work')">Work</button><button type="button" class="tag" onclick="setLabel('Night Drive')">Night Drive</button><button type="button" class="tag" onclick="setLabel('Reading')">Reading</button><button type="button" class="tag" onclick="setLabel('Gaming')">Gaming</button></div></div>
+            <div class="input-group"><label>Mode</label><div class="mode-cards">
+              <div class="mode-card selected" id="mode-timed" onclick="selectMode('timed')"><h4>⏱️ Timed</h4><p>Set duration, auto-stops with countdown</p></div>
+              <div class="mode-card" id="mode-continuous" onclick="selectMode('continuous')"><h4>♾️ Continuous</h4><p>Runs until you manually stop</p></div>
+            </div></div>
+            <div id="duration-picker" class="input-group"><label>Duration</label><div class="preset-btns"><button type="button" class="tag" onclick="setDuration(1800)">30 min</button><button type="button" class="tag" onclick="setDuration(3600)">1 hr</button><button type="button" class="tag" onclick="setDuration(7200)">2 hr</button><button type="button" class="tag" onclick="setDuration(14400)">4 hr</button></div><div class="custom-dur"><input type="number" id="dur-hours" min="0" max="12" value="0" placeholder="H"> h <input type="number" id="dur-mins" min="0" max="59" value="30" placeholder="M"> m</div></div>
+            <div class="input-group"><label>EAR Sensitivity: <span id="setup-thresh-val">0.25</span></label><input type="range" id="setup-thresh" min="0.15" max="0.35" step="0.01" value="0.25" oninput="document.getElementById('setup-thresh-val').textContent=this.value"></div>
+            <div class="input-group"><label>Alert Delay</label><div class="preset-btns"><button type="button" class="tag selected" data-delay="2" onclick="setDelay(this,2)">2s</button><button type="button" class="tag" data-delay="1" onclick="setDelay(this,1)">1s</button><button type="button" class="tag" data-delay="3" onclick="setDelay(this,3)">3s</button></div></div>
+            <button class="btn btn-primary btn-lg btn-block" onclick="beginSession()">🚀 Begin Session</button>
+            <a href="#" class="back-link" onclick="showView('dashboard')">← Back to Dashboard</a>
+          </div>
+        </div>
 
-        async function updateStatus() {
-            try {
-                const response = await fetch('/status');
-                const data = await response.json();
-                
-                document.getElementById('ear-val').innerText = data.ear.toFixed(2);
-                
-                const badge = document.getElementById('status-badge');
-                if (data.is_drowsy) {
-                    if (badge.className !== 'badge drowsy') {
-                        badge.className = 'badge drowsy';
-                        badge.innerText = '⚠️ DROWSY! WAKE UP!';
-                        
-                        // Start looping the beep every 600ms
-                        if (!beepInterval) {
-                            playBeep(); 
-                            beepInterval = setInterval(playBeep, 600);
-                        }
-                    }
-                } else {
-                    if (badge.className !== 'badge awake') {
-                        badge.className = 'badge awake';
-                        badge.innerText = 'AWAKE';
-                        
-                        // Stop looping beep
-                        if (beepInterval) {
-                            clearInterval(beepInterval);
-                            beepInterval = null;
-                        }
-                    }
-                }
-            } catch (err) {
-                console.error("Failed to fetch status:", err);
-            }
-        }
+        <!-- === VIEW: HISTORY === -->
+        <div id="view-history" class="view hidden">
+          <h2 class="view-title">Session History</h2>
+          <div class="history-charts"><div class="card"><div class="card-hdr">Alerts Over Time</div><div class="card-body chart-wrap"><canvas id="hist-alerts-chart"></canvas></div></div><div class="card"><div class="card-hdr">Avg EAR Over Time</div><div class="card-body chart-wrap"><canvas id="hist-ear-chart"></canvas></div></div></div>
+          <div class="card" style="margin-top:16px;"><div class="card-hdr"><span>All Sessions</span><button class="btn btn-ghost btn-sm" onclick="exportCSV()">⬇ Export CSV</button></div><div class="card-body"><div class="filter-row"><select id="filter-mode"><option value="">All Modes</option><option value="timed">Timed</option><option value="continuous">Continuous</option></select><select id="filter-label"><option value="">All Labels</option></select><button class="btn btn-ghost btn-sm" onclick="loadHistory()">Apply</button></div><table class="data-table"><thead><tr><th>Date</th><th>Label</th><th>Mode</th><th>Duration</th><th>Alerts</th><th>Avg EAR</th></tr></thead><tbody id="history-tbody"><tr><td colspan="6" class="empty-msg">No sessions found.</td></tr></tbody></table></div></div>
+        </div>
+      </main>
+    </div>
+  </div>
 
-        // Poll the server backend every 500ms
-        setInterval(updateStatus, 500);
+  <!-- ========== PAGE: ACTIVE SESSION ========== -->
+  <div id="page-session" class="page hidden">
+    <nav class="session-topbar"><div class="nav-brand"><svg class="logo-svg sm" viewBox="0 0 32 32" fill="none"><path d="M16 2L4 8v8c0 7.73 5.12 14.95 12 16 6.88-1.05 12-8.27 12-16V8L16 2z" fill="#00d4ff" fill-opacity="0.15" stroke="#00d4ff" stroke-width="1.5"/><ellipse cx="16" cy="15" rx="7" ry="4" stroke="#00d4ff" stroke-width="1.5" fill="none"/><circle cx="16" cy="15" r="2" fill="#00d4ff"/></svg><span class="brand-text sm">DrowsGuard</span></div><div class="session-topbar-center"><span id="session-label-display" class="session-label-tag">Session</span></div><button class="btn btn-danger" onclick="endSession()">■ End Session</button></nav>
+    <div id="session-timer-bar" class="session-timer-bar"><span id="session-timer" class="timer-mono">00:00:00</span><span id="timer-mode-label" class="timer-mode-label">CONTINUOUS</span></div>
+    <div class="session-body">
+      <div class="cam-col"><div class="cam-wrapper"><video id="webcam" autoplay playsinline muted></video><canvas id="overlay-canvas"></canvas><div id="no-face" class="overlay-badge hidden">NO FACE DETECTED</div><div id="cam-error" class="overlay-badge hidden">CAMERA ACCESS DENIED</div></div></div>
+      <div class="stats-col">
+        <div class="card status-card"><div id="status-badge" class="status-badge awake"><span id="status-text">AWAKE</span></div></div>
+        <div class="card"><div class="card-hdr">EAR</div><div class="card-body" style="text-align:center;"><span id="ear-value" class="ear-big">0.00</span><div class="ear-bar-wrap"><div id="ear-bar" class="ear-bar"></div><div id="ear-thresh-mark" class="ear-thresh-mark"></div></div></div></div>
+        <div class="card" style="flex:1;display:flex;flex-direction:column;"><div class="card-hdr">EAR History</div><div class="card-body chart-wrap" style="flex:1;"><canvas id="ear-chart"></canvas></div></div>
+        <div class="card"><div class="card-hdr">Alerts: <span id="alert-count" class="accent">0</span></div><div class="card-body"><div class="input-group sm"><label>Sensitivity: <span id="live-thresh-val">0.25</span></label><input type="range" id="live-thresh" min="0.15" max="0.35" step="0.01" value="0.25" oninput="updateLiveThreshold(this.value)"></div></div></div>
+      </div>
+    </div>
+    <div class="alert-log-bar"><div class="card-hdr">Alert Log</div><div id="alert-log" class="alert-log"><p class="empty-msg">No alerts yet.</p></div></div>
+  </div>
 
-        // Required to bypass Chrome/Edge autoplay policy restrictions
-        document.body.addEventListener('click', () => {
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
-        });
-    </script>
+  <!-- ========== MODAL: SESSION SUMMARY ========== -->
+  <div id="modal-summary" class="modal-overlay hidden">
+    <div class="modal-card">
+      <h2>Session Complete</h2>
+      <div class="summary-grid">
+        <div class="summary-item"><span class="summary-label">Label</span><span id="sum-label" class="summary-val">-</span></div>
+        <div class="summary-item"><span class="summary-label">Mode</span><span id="sum-mode" class="summary-val">-</span></div>
+        <div class="summary-item"><span class="summary-label">Duration</span><span id="sum-duration" class="summary-val">-</span></div>
+        <div class="summary-item"><span class="summary-label">Drowsy Alerts</span><span id="sum-alerts" class="summary-val danger">0</span></div>
+        <div class="summary-item"><span class="summary-label">Longest Episode</span><span id="sum-longest" class="summary-val">-</span></div>
+        <div class="summary-item"><span class="summary-label">Avg EAR</span><span id="sum-ear" class="summary-val">-</span></div>
+      </div>
+      <div class="card-hdr" style="margin-top:16px;">Alert Timeline</div>
+      <div id="sum-timeline" class="timeline-bar"></div>
+      <div id="sum-log" class="alert-log" style="max-height:120px;margin-top:8px;"></div>
+      <div class="modal-actions">
+        <button class="btn btn-primary" onclick="saveAndGoToDash()">Save & Dashboard</button>
+        <button class="btn btn-ghost" onclick="saveAndGoToHistory()">Save & History</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
 </body>
 </html>

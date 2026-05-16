@@ -1,5 +1,2 @@
-opencv-python
-mediapipe
-scipy
-numpy
-Flask
+flask
+python-dotenv
